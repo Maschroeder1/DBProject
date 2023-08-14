@@ -6,34 +6,36 @@ import time
 import json
 
 # ultimo 2019: 2019_04_05_Pominville.html
-first_failed = '2021_01_02_TufBorland.html'
+who_is_executing = 0 # 0 = Mikael, 1 = Marco, 2 = Henrique
+first_failed = ''
 dry_run = False
 wait_between_times = [10, 300, 10]
 cookies_file = './cookies2.json'
 
 driver = None
-found_success = False
+found_success = not len(first_failed)
 start_time = ''
 entry_time = ''
 
 def main():
-    with os.scandir('./scraper_urls') as entries:
+    with os.scandir('./scraper_urls_shallow') as entries:
         global start_time
         global entry_time
         global driver
-        sorted_entries = sorted([entry.name for entry in entries])
+        sorted_entries = sorted([entry.name for entry in entries if int(entry.name[:3]) % 3 == who_is_executing])
         if not dry_run:
             driver = get_driver()
         start_time = time.time()
         for entry in sorted_entries:
             entry_time = time.time()
             print(f'Starting {entry}')
-            with open(f'./scraper_urls/{entry}', 'r') as f:
-                for twitter_url in f:
+            with open(f'./scraper_urls_shallow/{entry}', 'r') as f:
+                for line in f:
+                    [name, twitter_url] = line.strip().split(' - ')
                     got_html = False
                     attempt = 0
                     while not got_html and attempt < len(wait_between_times):
-                        got_html = get_html(entry, twitter_url, wait_between_times[attempt])
+                        got_html = get_html(name, twitter_url, wait_between_times[attempt])
                         attempt += 1
                     if not got_html:
                         print('Error, finishing')
@@ -59,7 +61,7 @@ def get_html(entry: str, twitter_url: str, sleep_time: int):
                 return False
         else:
             print(file_name)
-            time.sleep(1)
+            time.sleep(0.1)
     return True
 
 def poll_html(sleep_time: int, file_name: str, url: str):

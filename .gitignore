@@ -1,6 +1,7 @@
 scraper_htmls/*
 scraper_trending/*
 scraper_urls/*
+scraper_urls_shallow/*
 temp_folder/*
 twitter_htmls/*
 twitter_tweets/*
