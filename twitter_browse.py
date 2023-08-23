@@ -7,15 +7,16 @@ import json
 
 # ultimo 2019: 2019_04_05_Pominville.html
 who_is_executing = 0 # 0 = Mikael, 1 = Marco, 2 = Henrique
-first_failed = ''
+first_failed = '2022_02_17_hashtag_thursdayvibes.html'
 dry_run = False
-wait_between_times = [10, 300, 10]
-cookies_file = './cookies2.json'
+wait_between_times = [10, 60, 180, 10]
+cookies_files = ['./cookies2.json', './cookies1.json']
 
 driver = None
 found_success = not len(first_failed)
 start_time = ''
 entry_time = ''
+cookies_index = 0
 
 def main():
     with os.scandir('./scraper_urls_shallow') as entries:
@@ -32,16 +33,22 @@ def main():
             with open(f'./scraper_urls_shallow/{entry}', 'r') as f:
                 for line in f:
                     [name, twitter_url] = line.strip().split(' - ')
-                    got_html = False
-                    attempt = 0
-                    while not got_html and attempt < len(wait_between_times):
-                        got_html = get_html(name, twitter_url, wait_between_times[attempt])
-                        attempt += 1
-                    if not got_html:
-                        print('Error, finishing')
-                        return
+                    browse_url(name, twitter_url)
     if not dry_run:
         driver.close()
+
+def browse_url(name: str, twitter_url: str, retry: bool = True):
+    got_html = False
+    attempt = 0
+    while not got_html and attempt < len(wait_between_times):
+        got_html = get_html(name, twitter_url, wait_between_times[attempt])
+        attempt += 1
+    if not got_html:
+        if not retry:
+            raise Exception('Error, finishing')
+        else:
+            rotate_driver()
+            browse_url(name, twitter_url, False)
 
 def get_html(entry: str, twitter_url: str, sleep_time: int):
     global found_success
@@ -80,6 +87,10 @@ def is_success(html: str, file_name: str, url: str):
     if 'Something went wrong. Try reloading.' in html:
         print(f'Error {file_name} couldnt access {url}')
         return False
+    if 'Não há resultados' in html:
+        print(f'Error {file_name} no results for {url}')
+        time.sleep(5)
+        return True # Skip
     if 'data-testid="tweet"' not in html:
         print(f'Error {file_name} couldnt get tweets {url}')
         return False
@@ -102,12 +113,21 @@ def get_driver():
     driver = webdriver.Chrome(opts)
     driver.get("https://twitter.com/Sarah_Stierch/status/1682956793218240514")
     cookies = {}
+    cookies_file = cookies_files[cookies_index % len(cookies_files)]
     with open(cookies_file, 'r') as f:
         cookies = json.load(f)
     for cookie in cookies:
         driver.add_cookie(cookie)
 
     return driver
+
+def rotate_driver():
+    global driver
+    global cookies_index
+    if not dry_run:
+        cookies_index += 1
+        driver.close()
+        driver = get_driver()
 
 if __name__ == '__main__':
     main()
