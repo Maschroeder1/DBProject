@@ -103,7 +103,7 @@ def get_retweets(engagement):
         return int(retweets[0].split()[0])
 
 def get_replies(engagement):
-    replies = [s for s in engagement if 'repl' in s.lower()]
+    replies = [s for s in engagement if 'repl' in s.lower() or 'resposta' in s.lower()]
     if len(replies) != 1:
         print(f'Expected 1 got {len(replies)} reply count')
         return 0 if len(replies) == 0 else -1
@@ -111,7 +111,7 @@ def get_replies(engagement):
         return int(replies[0].split()[0])
 
 def get_likes(engagement):
-    likes = [s for s in engagement if 'like' in s.lower()]
+    likes = [s for s in engagement if 'like' in s.lower() or 'curtida' in s.lower()]
     if len(likes) != 1:
         print(f'Expected 1 got {len(likes)} reply count')
         return 0 if len(likes) == 0 else -1
