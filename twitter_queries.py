@@ -104,14 +104,26 @@ class Query:
                     "where sd.topic = td.topic" + "\n" + \
                     "match (w:WORD)<-[r:CONTAINS]-(t)" + "\n" + \
                     "where w.value = \"" + word + "\"\n" + \
-                    "with d.name as date, w.value as word, count(r) as countIncoming" + "\n" + \
-                    "order by date Asc, countIncoming Asc, word Asc" + "\n" + \
-                    "return date, word, countIncoming"
+                    "with d.name as date, count(r) as countIncoming" + "\n" + \
+                    "order by date Asc, countIncoming Asc" + "\n" + \
+                    "return date, countIncoming"
             result = session.run(query)
             values = []
+            # recover the results
             for record in result:
                 values.append(record.values())
-            return values
+            # save the results
+            csv_file = "csv/q5_{}.csv".format(word)
+            with open(csv_file, "w", newline="") as file:
+                writer = csv.writer(file)
+                writer.writerow(["date", "counter"])
+                writer.writerows(values)
+            # plot the graph
+            df = pd.read_csv(csv_file)
+            plt.clf()
+            sns.lineplot(data=df, x="date", y="counter")
+            plt.title(label=word)
+            plt.savefig(csv_file.replace("csv", "png"))
 
     def query_them_all(self):
         with self.driver.session() as session:
@@ -170,7 +182,7 @@ def menu(q:Query):
             print("Wrong input!")
 
 if __name__ == "__main__":
-    pwd = "" #TODO: insert you db passowrd here
+    pwd = "#IVV4587#" #TODO: insert you db passowrd here
     print("Openning connection to the database...")
     q = Query("bolt://localhost:7689", "neo4j", password=pwd)
     menu(q)
