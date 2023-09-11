@@ -182,7 +182,7 @@ def menu(q:Query):
             print("Wrong input!")
 
 if __name__ == "__main__":
-    pwd = "#IVV4587#" #TODO: insert you db passowrd here
+    pwd = "" #TODO: insert you db passowrd here
     print("Openning connection to the database...")
     q = Query("bolt://localhost:7689", "neo4j", password=pwd)
     menu(q)
