@@ -68,34 +68,63 @@ class Query:
                 writer.writerow(["date", "topic", "tweet_id", "tweet_text"])
                 writer.writerows(values)
 
-    def query_04(self, word):
+    def query_04(self):
+        hate_speech_words = ["chink", "slant-eye", "spic", "wetback", "kike", "hebe", "bitch", "slut", "whore", "fag",
+                            "dyke", "tranny", "shemale", "conspiracy", "denial", "holocaust", "terrorist", "raghead", "retard",
+                            "cripple", "invalid", "fatso", "lardass", "stick", "beanpole", "aliens", "confederance", "swastika", 
+                            "kill", "die", "harm", "hurt", "lazy", "weak"]
+        hate_speech_words_to_str = "["
+        for w in hate_speech_words:
+            hate_speech_words_to_str += "\"" + w + "\","
+        hate_speech_words_to_str = hate_speech_words_to_str[0:-1] + "]"
         with self.driver.session() as session:
             query = "match (t:TWEET)-[:CREATED_AT]->(d:DATE)" + "\n" + \
                     "match (w:WORD)<-[r:CONTAINS]-(t)" + "\n" + \
-                    "where w.value = \"" + word + "\"\n" + \
-                    "with d.name as date, count(r) as countIncoming"+ "\n" + \
-                    "order by date Asc, countIncoming Asc"+ "\n" + \
-                    "return date, countIncoming"
+                    "where w.value in " + hate_speech_words_to_str + "\n" + \
+                    "with d.name as date, count(r) as countIncoming, w.value as word"+ "\n" + \
+                    "order by date Asc, word Asc, countIncoming Asc"+ "\n" + \
+                    "return date, word, countIncoming"
             result = session.run(query)
             values = []
             # recover the results
             for record in result:
                 values.append(record.values())
             # save the results
-            csv_file = "csv/q4_{}.csv".format(word)
+            csv_file = "csv/q4.csv"
             with open(csv_file, "w", newline="") as file:
                 writer = csv.writer(file)
-                writer.writerow(["date", "counter"])
-                writer.writerows(values)
+                writer.writerow(["date", "word", "counter"])
+                dates = {}
+                for date, word, inc in values:
+                    if not date in dates:
+                        dates[date] = {w: 0 for w in hate_speech_words}
+                    dates[date][word] = inc
+                csv_data = []
+                for date in dates:
+                    for word in dates[date]:
+                        csv_data.append([date, word, dates[date][word]])
+                writer.writerows(csv_data)
+                    
+
             # plot the graph
             df = pd.read_csv(csv_file)
             plt.clf()
-            sns.lineplot(data=df, x="date", y="counter")
-            plt.title(label=word)
+            plt.figure(figsize=(16, 9))
+            ax = sns.lineplot(data=df, x="date", y="counter", hue="word")
+            sns.move_legend(ax, "upper left", bbox_to_anchor=(1,1))
+            plt.title(label="Hate Speech Analysis")
             plt.savefig(csv_file.replace("csv", "png"))
             
 
-    def query_05(self, word):
+    def query_05(self):
+        hate_speech_words = ["chink", "slant-eye", "spic", "wetback", "kike", "hebe", "bitch", "slut", "whore", "fag",
+                            "dyke", "tranny", "shemale", "conspiracy", "denial", "holocaust", "terrorist", "raghead", "retard",
+                            "cripple", "invalid", "fatso", "lardass", "stick", "beanpole", "aliens", "confederance", "swastika", 
+                            "kill", "die", "harm", "hurt", "lazy", "weak"]
+        hate_speech_words_to_str = "["
+        for w in hate_speech_words:
+            hate_speech_words_to_str += "\"" + w + "\","
+        hate_speech_words_to_str = hate_speech_words_to_str[0:-1] + "]"
         with self.driver.session() as session:
             query = "match (t:TWEET{sponsored:FALSE})" + "\n" + \
                     "match (s:TWEET{sponsored:TRUE})" + "\n" + \
@@ -103,27 +132,40 @@ class Query:
                     "match (t)-[td:CREATED_AT]->(d:DATE)" + "\n" + \
                     "where sd.topic = td.topic" + "\n" + \
                     "match (w:WORD)<-[r:CONTAINS]-(t)" + "\n" + \
-                    "where w.value = \"" + word + "\"\n" + \
-                    "with d.name as date, count(r) as countIncoming" + "\n" + \
-                    "order by date Asc, countIncoming Asc" + "\n" + \
-                    "return date, countIncoming"
+                    "where w.value in " + hate_speech_words_to_str + "\n" + \
+                    "with d.name as date, count(r) as countIncoming, w.value as word" + "\n" + \
+                    "order by date Asc, word Asc, countIncoming Asc" + "\n" + \
+                    "return date, word, countIncoming"
             result = session.run(query)
             values = []
             # recover the results
             for record in result:
                 values.append(record.values())
             # save the results
-            csv_file = "csv/q5_{}.csv".format(word)
+            csv_file = "csv/q5.csv"
             with open(csv_file, "w", newline="") as file:
                 writer = csv.writer(file)
-                writer.writerow(["date", "counter"])
-                writer.writerows(values)
+                writer.writerow(["date", "word", "counter"])
+                dates = {}
+                for date, word, inc in values:
+                    if not date in dates:
+                        dates[date] = {w: 0 for w in hate_speech_words}
+                    dates[date][word] = inc
+                csv_data = []
+                for date in dates:
+                    for word in dates[date]:
+                        csv_data.append([date, word, dates[date][word]])
+                writer.writerows(csv_data)
+                    
             # plot the graph
             df = pd.read_csv(csv_file)
             plt.clf()
-            sns.lineplot(data=df, x="date", y="counter")
-            plt.title(label=word)
+            plt.figure(figsize=(16, 9))
+            ax = sns.lineplot(data=df, x="date", y="counter", hue="word")
+            sns.move_legend(ax, "upper left", bbox_to_anchor=(1,1))
+            plt.title(label="Hate Speech Analysis")
             plt.savefig(csv_file.replace("csv", "png"))
+
 
     def query_them_all(self):
         with self.driver.session() as session:
@@ -166,14 +208,10 @@ def menu(q:Query):
             q.query_03()
 
         elif option ==  4:
-            print("Please enter the word you want to search for.")
-            word = input()
-            q.query_04(word)   
+            q.query_04()   
 
         elif option ==  5:
-            print("Please enter the word you want to search for.")
-            word = input()
-            q.query_05(word)          
+            q.query_05()          
 
         elif option ==  6:
             return
