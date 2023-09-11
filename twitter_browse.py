@@ -6,11 +6,11 @@ import time
 import json
 
 # ultimo 2019: 2019_04_05_Pominville.html
-who_is_executing = 0 # 0 = Mikael, 1 = Marco, 2 = Henrique
-first_failed = '2022_02_17_hashtag_thursdayvibes.html'
+who_is_executing = 1 # 0 = Mikael, 1 = Marco, 2 = Henrique
+first_failed = '2023_03_24_AdamMorrison.html'
 dry_run = False
-wait_between_times = [10, 60, 180, 10]
-cookies_files = ['./cookies2.json', './cookies1.json']
+wait_between_times = [20, 120, 360, 20]
+cookies_files = ['./cookies1.json', './cookies2.json']
 
 driver = None
 found_success = not len(first_failed)
