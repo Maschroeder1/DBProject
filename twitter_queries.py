@@ -69,102 +69,120 @@ class Query:
                 writer.writerows(values)
 
     def query_04(self):
-        hate_speech_words = ["chink", "slant-eye", "spic", "wetback", "kike", "hebe", "bitch", "slut", "whore", "fag",
-                            "dyke", "tranny", "shemale", "conspiracy", "denial", "holocaust", "terrorist", "raghead", "retard",
-                            "cripple", "invalid", "fatso", "lardass", "stick", "beanpole", "aliens", "confederance", "swastika", 
-                            "kill", "die", "harm", "hurt", "lazy", "weak"]
-        hate_speech_words_to_str = "["
-        for w in hate_speech_words:
-            hate_speech_words_to_str += "\"" + w + "\","
-        hate_speech_words_to_str = hate_speech_words_to_str[0:-1] + "]"
-        with self.driver.session() as session:
-            query = "match (t:TWEET)-[:CREATED_AT]->(d:DATE)" + "\n" + \
-                    "match (w:WORD)<-[r:CONTAINS]-(t)" + "\n" + \
-                    "where w.value in " + hate_speech_words_to_str + "\n" + \
-                    "with d.name as date, count(r) as countIncoming, w.value as word"+ "\n" + \
-                    "order by date Asc, word Asc, countIncoming Asc"+ "\n" + \
-                    "return date, word, countIncoming"
-            result = session.run(query)
-            values = []
-            # recover the results
-            for record in result:
-                values.append(record.values())
-            # save the results
-            csv_file = "csv/q4.csv"
-            with open(csv_file, "w", newline="") as file:
-                writer = csv.writer(file)
-                writer.writerow(["date", "word", "counter"])
-                dates = {}
-                for date, word, inc in values:
-                    if not date in dates:
-                        dates[date] = {w: 0 for w in hate_speech_words}
-                    dates[date][word] = inc
-                csv_data = []
-                for date in dates:
-                    for word in dates[date]:
-                        csv_data.append([date, word, dates[date][word]])
-                writer.writerows(csv_data)
-                    
-
-            # plot the graph
-            df = pd.read_csv(csv_file)
-            plt.clf()
-            plt.figure(figsize=(16, 9))
-            ax = sns.lineplot(data=df, x="date", y="counter", hue="word")
-            sns.move_legend(ax, "upper left", bbox_to_anchor=(1,1))
-            plt.title(label="Hate Speech Analysis")
-            plt.savefig(csv_file.replace("csv", "png"))
+        hate_speech_words_by_group = {
+            "Racial slurs": ["chink", "slant-eye", "spic", "wetback", "kike", "hebe"],
+            "Misogynistic language": ["bitch", "slut", "whore"],
+            "Homophobic and transphobic language": ["fag", "dyke", "tranny", "shemale"],
+            "Ableist language":  ["retard", "cripple", "invalid"],
+            "Fat and Skinny-shaming language" : ["fatso", "lardass", "stick", "beanpole"],
+            "Violent language": ["kill", "die", "harm", "hurt", "lazy", "weak"] 
+        }
+        for group in hate_speech_words_by_group:
+            hate_speech_words = hate_speech_words_by_group[group]
+            hate_speech_words_to_str = "["
+            for w in hate_speech_words:
+                hate_speech_words_to_str += "\"" + w + "\","
+            hate_speech_words_to_str = hate_speech_words_to_str[0:-1] + "]"
+            with self.driver.session() as session:
+                query = "match (t:TWEET)-[:CREATED_AT]->(d:DATE)" + "\n" + \
+                        "match (w:WORD)<-[r:CONTAINS]-(t)" + "\n" + \
+                        "where w.value in " + hate_speech_words_to_str + "\n" + \
+                        "with d.name as date, count(r) as countIncoming, w.value as word"+ "\n" + \
+                        "order by date Asc, word Asc, countIncoming Asc"+ "\n" + \
+                        "return date, word, countIncoming"
+                result = session.run(query)
+                values = []
+                # recover the results
+                for record in result:
+                    values.append(record.values())
+                # save the results
+                csv_file = "csv/q4_{}.csv".format(group.replace(" ", ""))
+                print(csv_file)
+                mx_inc = 0
+                with open(csv_file, "w", newline="") as file:
+                    writer = csv.writer(file)
+                    writer.writerow(["date", "word", "counter"])
+                    dates = {}
+                    for date, word, inc in values:
+                        if not date in dates:
+                            dates[date] = {w: 0 for w in hate_speech_words}
+                        dates[date][word] = inc
+                        mx_inc = max(inc, mx_inc)
+                    if mx_inc != 0:
+                        csv_data = []
+                        for date in dates:
+                            for word in dates[date]:
+                                csv_data.append([date, word, dates[date][word]])
+                        writer.writerows(csv_data)
+                if mx_inc != 0:
+                    # plot the graph
+                    df = pd.read_csv(csv_file)
+                    plt.clf()
+                    plt.figure(figsize=(16, 9))
+                    ax = sns.lineplot(data=df, x="date", y="counter", hue="word")
+                    sns.move_legend(ax, "upper left", bbox_to_anchor=(1,1))
+                    plt.title(label=group)
+                    plt.savefig(csv_file.replace("csv", "png"))
             
 
     def query_05(self):
-        hate_speech_words = ["chink", "slant-eye", "spic", "wetback", "kike", "hebe", "bitch", "slut", "whore", "fag",
-                            "dyke", "tranny", "shemale", "conspiracy", "denial", "holocaust", "terrorist", "raghead", "retard",
-                            "cripple", "invalid", "fatso", "lardass", "stick", "beanpole", "aliens", "confederance", "swastika", 
-                            "kill", "die", "harm", "hurt", "lazy", "weak"]
-        hate_speech_words_to_str = "["
-        for w in hate_speech_words:
-            hate_speech_words_to_str += "\"" + w + "\","
-        hate_speech_words_to_str = hate_speech_words_to_str[0:-1] + "]"
-        with self.driver.session() as session:
-            query = "match (t:TWEET{sponsored:FALSE})" + "\n" + \
-                    "match (s:TWEET{sponsored:TRUE})" + "\n" + \
-                    "match (s)-[sd:CREATED_AT]->(d:DATE)" + "\n" + \
-                    "match (t)-[td:CREATED_AT]->(d:DATE)" + "\n" + \
-                    "where sd.topic = td.topic" + "\n" + \
-                    "match (w:WORD)<-[r:CONTAINS]-(t)" + "\n" + \
-                    "where w.value in " + hate_speech_words_to_str + "\n" + \
-                    "with d.name as date, count(r) as countIncoming, w.value as word" + "\n" + \
-                    "order by date Asc, word Asc, countIncoming Asc" + "\n" + \
-                    "return date, word, countIncoming"
-            result = session.run(query)
-            values = []
-            # recover the results
-            for record in result:
-                values.append(record.values())
-            # save the results
-            csv_file = "csv/q5.csv"
-            with open(csv_file, "w", newline="") as file:
-                writer = csv.writer(file)
-                writer.writerow(["date", "word", "counter"])
-                dates = {}
-                for date, word, inc in values:
-                    if not date in dates:
-                        dates[date] = {w: 0 for w in hate_speech_words}
-                    dates[date][word] = inc
-                csv_data = []
-                for date in dates:
-                    for word in dates[date]:
-                        csv_data.append([date, word, dates[date][word]])
-                writer.writerows(csv_data)
-                    
-            # plot the graph
-            df = pd.read_csv(csv_file)
-            plt.clf()
-            plt.figure(figsize=(16, 9))
-            ax = sns.lineplot(data=df, x="date", y="counter", hue="word")
-            sns.move_legend(ax, "upper left", bbox_to_anchor=(1,1))
-            plt.title(label="Hate Speech Analysis")
-            plt.savefig(csv_file.replace("csv", "png"))
+        hate_speech_words_by_group = {
+            "Racial slurs": ["chink", "slant-eye", "spic", "wetback", "kike", "hebe"],
+            "Misogynistic language": ["bitch", "slut", "whore"],
+            "Homophobic and transphobic language": ["fag", "dyke", "tranny", "shemale"],
+            "Ableist language":  ["retard", "cripple", "invalid"],
+            "Fat and Skinny-shaming language" : ["fatso", "lardass", "stick", "beanpole"],
+            "Violent language": ["kill", "die", "harm", "hurt", "lazy", "weak"] 
+        }
+        for group in hate_speech_words_by_group:
+            hate_speech_words = hate_speech_words_by_group[group]
+            hate_speech_words_to_str = "["
+            for w in hate_speech_words:
+                hate_speech_words_to_str += "\"" + w + "\","
+            hate_speech_words_to_str = hate_speech_words_to_str[0:-1] + "]"
+            with self.driver.session() as session:
+                query = "match (t:TWEET{sponsored:FALSE})" + "\n" + \
+                        "match (s:TWEET{sponsored:TRUE})" + "\n" + \
+                        "match (s)-[sd:CREATED_AT]->(d:DATE)" + "\n" + \
+                        "match (t)-[td:CREATED_AT]->(d:DATE)" + "\n" + \
+                        "where sd.topic = td.topic" + "\n" + \
+                        "match (w:WORD)<-[r:CONTAINS]-(t)" + "\n" + \
+                        "where w.value in " + hate_speech_words_to_str + "\n" + \
+                        "with d.name as date, count(r) as countIncoming, w.value as word" + "\n" + \
+                        "order by date Asc, word Asc, countIncoming Asc" + "\n" + \
+                        "return date, word, countIncoming"
+                result = session.run(query)
+                values = []
+                # recover the results
+                for record in result:
+                    values.append(record.values())
+                # save the results
+                csv_file = "csv/q5_{}.csv".format(group.replace(" ", ""))
+                mx_inc = 0
+                with open(csv_file, "w", newline="") as file:
+                    writer = csv.writer(file)
+                    writer.writerow(["date", "word", "counter"])
+                    dates = {}
+                    for date, word, inc in values:
+                        if not date in dates:
+                            dates[date] = {w: 0 for w in hate_speech_words}
+                        dates[date][word] = inc
+                        mx_inc = max(mx_inc, inc)
+                    if mx_inc != 0:
+                        csv_data = []
+                        for date in dates:
+                            for word in dates[date]:
+                                csv_data.append([date, word, dates[date][word]])
+                        writer.writerows(csv_data)
+                if mx_inc != 0:
+                    # plot the graph
+                    df = pd.read_csv(csv_file)
+                    plt.clf()
+                    plt.figure(figsize=(16, 9))
+                    ax = sns.lineplot(data=df, x="date", y="counter", hue="word")
+                    sns.move_legend(ax, "upper left", bbox_to_anchor=(1,1))
+                    plt.title(label=group)
+                    plt.savefig(csv_file.replace("csv", "png"))
 
 
     def query_them_all(self):
