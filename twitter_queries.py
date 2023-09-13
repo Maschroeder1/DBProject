@@ -53,7 +53,7 @@ class Query:
                     "match (s:TWEET{sponsored:TRUE})\n" +\
                     "match (s)-[sd:CREATED_AT]->(d:DATE)\n" +\
                     "match (t)-[td:CREATED_AT]->(d:DATE)\n" +\
-                    "where sd.topic = td.topic\n" +\
+                    "where sd.topic = td.topic and 2021_01_01 <= d.name <= 2023_04_23\n" +\
                     "with d.name as date, sd.topic as topic, t.id as tweet_id, t.text as tweet_text\n" +\
                     "order by date asc\n" +\
                     "return date, topic, tweet_id, tweet_text\n"
@@ -91,7 +91,7 @@ class Query:
                 if q == 4:
                     query = "match (t:TWEET)-[:CREATED_AT]->(d:DATE)\n" + \
                                     "match (w:WORD)<-[r:CONTAINS]-(t)\n" + \
-                                    "where w.value in " + hate_speech_words_to_str + "\n" + \
+                                    "where 2021_01_01 <= d.name <= 2023_04_23 and w.value in " + hate_speech_words_to_str + "\n" + \
                                     "with d.name as date, count(r) as countIncoming\n" + \
                                     "order by date Asc, countIncoming Asc\n" + \
                                     "return date, countIncoming"
@@ -100,7 +100,7 @@ class Query:
                                     "match (s:TWEET{sponsored:TRUE})" + "\n" + \
                                     "match (s)-[sd:CREATED_AT]->(d:DATE)" + "\n" + \
                                     "match (t)-[td:CREATED_AT]->(d:DATE)" + "\n" + \
-                                    "where sd.topic = td.topic" + "\n" + \
+                                    "where 2021_01_01 <= d.name <= 2023_04_23 and sd.topic = td.topic" + "\n" + \
                                     "match (w:WORD)<-[r:CONTAINS]-(t)" + "\n" + \
                                     "where w.value in " + hate_speech_words_to_str + "\n" + \
                                     "with d.name as date, count(r) as countIncoming\n" + \
